@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Portal do Aluno SENAI | Premium</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+
+        <div id="login-screen" class="screen active">
+            <div class="login-panel">
+                <div class="login-header">
+                    <div class="logo-wrapper">
+                        <img src="https://www.sp.senai.br/images/senai.svg" alt="Logo SENAI" class="logo">
+                    </div>
+                    <h2>Senai Conecta</h2>
+                    <p>Portal de Comunicação</p>
+                    <div class="header-line"></div>
+                </div>
+                
+                <div id="login-form-group">
+                    <div id="login-inputs">
+                        <div class="input-icon-group">
+                            <i class="fa-solid fa-user-circle"></i>
+                            <input type="text" id="login-rm" placeholder="Matrícula">
+                        </div>
+                        <div class="input-icon-group">
+                            <i class="fa-solid fa-lock"></i>
+                            <input type="password" id="login-password" placeholder="Senha">
+                        </div>
+                        <button class="btn-primary" onclick="efetuarLogin()">
+                            Acessar Portal <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <p class="forgot-pass" style="cursor: pointer;" onclick="mostrarCadastro()">Primeiro acesso ou Esqueceu a senha?</p>
+                    </div>
+
+                    <div id="register-inputs" style="display: none;">
+                        <div class="input-icon-group">
+                            <i class="fa-solid fa-id-card"></i>
+                            <input type="number" id="reg-rm" placeholder="Matrícula">
+                        </div>
+                        <div class="input-icon-group">
+                            <i class="fa-solid fa-key"></i>
+                            <input type="password" id="reg-password" placeholder="Crie sua Senha">
+                        </div>
+                        <button class="btn-primary" onclick="salvarCadastro()">
+                            Cadastrar Acesso <i class="fa-solid fa-user-plus"></i>
+                        </button>
+                        <p class="forgot-pass" style="cursor: pointer;" onclick="mostrarLogin()">Voltar ao Login</p>
+                    </div>
+                </div>
+                <p id="login-error" class="error-msg"></p>
+            </div>
+        </div>
+
+        <div id="app-screen" class="screen">
+            <header class="main-header">
+                <div class="header-content">
+                    <div class="user-greeting">
+                        <span id="welcome-text">Olá, Sou seu <span class="destaque">Comunic</span>!</span>
+                        <br>
+                        <span id="user-info">Análise e Desenv. de Sistemas</span>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon" id="theme-toggle" onclick="alternarTema()"><i class="fa-solid fa-moon"></i></button>
+                        <button class="btn-icon" onclick="abrirNotificacoes()"><i class="fa-solid fa-bell"></i><span id="noti-badge" class="badge">2</span></button>
+                        <button class="btn-icon" onclick="fecharSessao()"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+                    </div>
+                </div>
+                <div id="quick-filters" class="tag-filters">
+                    <button class="filter-btn active" onclick="filtrarPorTag('todos', this)">Todos</button>
+                    <button class="filter-btn" onclick="filtrarPorTag('gest', this)">Gestão</button>
+                    <button class="filter-btn" onclick="filtrarPorTag('prof', this)">Professores</button>
+                    <button class="filter-btn" onclick="filtrarPorTag('job', this)">Vagas</button>
+                </div>
+            </header>
+
+            <nav class="nav-tabs">
+                <button class="tab-btn active" id="tab-mural" onclick="mudarTab('mural', event)"><i class="fa-solid fa-newspaper"></i> Mural</button>
+                <button class="tab-btn" id="tab-links" onclick="mudarTab('links', event)"><i class="fa-solid fa-link"></i> Links Úteis</button>
+                <button class="tab-btn" id="tab-vagas" onclick="mudarTab('vagas', event)"><i class="fa-solid fa-briefcase"></i> Vagas</button>
+                <button class="tab-btn" id="tab-perfil" onclick="mudarTab('perfil', event)"><i class="fa-solid fa-user-gear"></i> Perfil</button>
+            </nav>
+
+            <main id="content-area"></main>
+        </div>
+    </div>
+
+    <div id="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center; padding: 20px;" onclick="fecharModalPerfil()">
+        <div class="card" style="width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
+            <h3><i class="fa-solid fa-gear"></i> Configurações</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+                <input type="text" id="edit-nome" placeholder="Nome Completo" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-primary);">
+                <select id="edit-curso" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-primary);">
+                    <option value="Análise e Desenv. de Sistemas">Análise e Desenv. de Sistemas</option>
+                </select>
+                <input type="text" id="edit-turma" placeholder="Turma" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-primary);">
+                <select id="edit-turno" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-primary);">
+                    <option value="Manhã">Manhã</option>
+                    <option value="Tarde">Tarde</option>
+                    <option value="Noite">Noite</option>
+                </select>
+                <button onclick="salvarConfiguracoesPerfil()" class="btn-primary" style="padding: 12px; margin-top: 10px;">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar-overlay" onclick="fecharNotificacoes()"></div>
+    <div id="notification-sidebar">
+        <div class="sidebar-header"><h3><i class="fa-solid fa-bell"></i> Recentes</h3></div>
+        <div id="sidebar-content"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
