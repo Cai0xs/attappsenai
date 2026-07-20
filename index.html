@@ -26,7 +26,7 @@
                     <div id="login-inputs">
                         <div class="input-icon-group">
                             <i class="fa-solid fa-user-circle"></i>
-                            <input type="text" id="login-rm" placeholder="Matrícula">
+                            <input type="text" id="login-rm" placeholder="Matrícula" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
                         <div class="input-icon-group">
                             <i class="fa-solid fa-lock"></i>
@@ -41,7 +41,7 @@
                     <div id="register-inputs" style="display: none;">
                         <div class="input-icon-group">
                             <i class="fa-solid fa-id-card"></i>
-                            <input type="number" id="reg-rm" placeholder="Matrícula">
+                            <input type="text" id="reg-rm" placeholder="Matrícula" inputmode="numeric" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
                         <div class="input-icon-group">
                             <i class="fa-solid fa-key"></i>

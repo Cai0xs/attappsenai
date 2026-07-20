@@ -1,4 +1,10 @@
-// --- BASE DE DADOS CENTRALIZADA ---
+// --- BASE DE DADOS DE ALUNOS CADASTRADOS (Simulação local segura) ---
+const bancoAlunosCadastrados = [
+    { matricula: "2026110488", senha: "Senha@123", nome: "Caio Silva", curso: "Análise e Desenv. de Sistemas", turma: "Turma A", turno: "Noite", email: "caio.silva@aluno.senai.br" },
+    { matricula: "01", senha: "Senai@2026", nome: "Aluno Teste", curso: "Análise e Desenv. de Sistemas", turma: "Turma B", turno: "Manhã", email: "aluno.teste@aluno.senai.br" }
+];
+
+// --- BASE DE DADOS CENTRALIZADA DE CONTEÚDOS ---
 const bancoAnuncios = [
     { id: 1, categoria: "mural", tag: "coord", tipo: "Gestão", titulo: "Rematrícula 2026/2", desc: "Prezados alunos, o prazo de renovação de matrícula encerra no fim deste mês. Evitem contratempos realizando o processo na secretaria virtual." },
     { id: 2, categoria: "mural", tag: "prof", tipo: "Professor", titulo: "Entrega de Projetos - Redes", desc: "Professor Carlos avisa: A postagem dos relatórios finais de monitoramento de redes locais deve ser feita no ambiente virtual de aprendizagem até sexta." },
@@ -12,13 +18,13 @@ const bancoAnuncios = [
 let abaAtual = "mural";
 let filtroTagAtivo = "todos";
 let dadosUsuario = {
-    nome: "Caio Silva",
-    rm: "2026110488",
+    nome: "",
+    rm: "",
     tipo: "aluno",
-    curso: "Análise e Desenv. de Sistemas",
-    turma: "Turma A",
-    turno: "Noite",
-    email: "caio.silva@aluno.senai.br"
+    curso: "",
+    turma: "",
+    turno: "",
+    email: ""
 };
 
 // --- TEMA ---
@@ -40,6 +46,7 @@ function alternarTema() {
 function alternarTelaCadastro(mostrar) {
     const loginInputs = document.getElementById('login-inputs');
     const registerInputs = document.getElementById('register-inputs');
+    document.getElementById("login-error").innerText = "";
 
     if (mostrar) {
         loginInputs.style.display = 'none';
@@ -50,60 +57,113 @@ function alternarTelaCadastro(mostrar) {
     }
 }
 
+function mostrarCadastro() {
+    alternarTelaCadastro(true);
+}
+
+function mostrarLogin() {
+    alternarTelaCadastro(false);
+}
+
 function salvarCadastro() {
-    const rm = document.getElementById('reg-rm').value;
+    const rm = document.getElementById('reg-rm').value.trim();
     const senha = document.getElementById('reg-password').value;
+    const erroElemento = document.getElementById("login-error");
     
-    // Validação: Matrícula apenas números e senha alfanumérica com caractere especial
+    // Validação estrita: Matrícula deve conter APENAS números
+    const apenasNumeros = /^[0-9]+$/;
+    // Validação de senha: letras (maiúsculas/minúsculas), números e caracteres especiais, min 6 caracteres
     const regexSenha = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/;
 
-    if (!rm || rm.length < 5) {
-        alert("Por favor, insira uma matrícula válida (apenas números).");
+    if (!apenasNumeros.test(rm)) {
+        erroElemento.innerText = "A matrícula deve conter apenas números!";
         return;
     }
 
     if (!regexSenha.test(senha)) {
-        alert("A senha deve conter pelo menos 6 caracteres, incluindo letras, números e um caractere especial.");
+        erroElemento.innerText = "A senha deve ter letras, números e símbolos especiais (min. 6 caracteres).";
         return;
     }
 
-    alert("Cadastro realizado com sucesso! Você já pode acessar o sistema.");
-    alternarTelaCadastro(false);
+    // Verifica se já existe
+    const jaExiste = bancoAlunosCadastrados.find(a => a.matricula === rm);
+    if (jaExiste) {
+        erroElemento.innerText = "Esta matrícula já está cadastrada!";
+        return;
+    }
+
+    // Adiciona na base temporária simulada
+    bancoAlunosCadastrados.push({
+        matricula: rm,
+        senha: senha,
+        nome: "Aluno Cadastrado",
+        curso: "Análise e Desenv. de Sistemas",
+        turma: "Turma A",
+        turno: "Noite",
+        email: `aluno.${rm}@aluno.senai.br`
+    });
+
+    erroElemento.style.color = "green";
+    erroElemento.innerText = "Cadastro realizado com sucesso! Faça login.";
+    setTimeout(() => {
+        erroElemento.style.color = "";
+        erroElemento.innerText = "";
+        mostrarLogin();
+    }, 2000);
 }
 
 function efetuarLogin() {
-    const loginInput = document.getElementById("login-rm").value;
+    const loginInput = document.getElementById("login-rm").value.trim();
     const passInput = document.getElementById("login-password").value;
+    const erroElemento = document.getElementById("login-error");
+    erroElemento.style.color = "";
 
     if (!loginInput || !passInput) {
-        document.getElementById("login-error").innerText = "Preencha todos os campos.";
+        erroElemento.innerText = "Preencha todos os campos.";
         return;
     }
-    
-    dadosUsuario.tipo = "aluno";
-    dadosUsuario.nome = "Caio Silva";
-    dadosUsuario.email = "caio.silva@aluno.senai.br";
 
-    const inputLower = loginInput.toLowerCase();
-
-    if (inputLower.includes("gestao")) {
-        dadosUsuario.tipo = "gestao";
-        dadosUsuario.nome = "Gestor Administrativo";
-        dadosUsuario.email = "gestao@senai.br";
-    } else if (inputLower.includes("prof")) {
-        dadosUsuario.tipo = "professor";
-        dadosUsuario.nome = "Prof. Carlos Souza";
-        dadosUsuario.email = "carlos.souza@professor.senai.br";
+    // Regra: Matrícula deve conter APENAS números
+    const apenasNumeros = /^[0-9]+$/;
+    if (!apenasNumeros.test(loginInput)) {
+        erroElemento.innerText = "A matrícula deve conter apenas números!";
+        return;
     }
 
+    // Validação estrita: Verifica se a matrícula e senha constam exatamente no banco cadastrado
+    const alunoEncontrado = bancoAlunosCadastrados.find(
+        (aluno) => aluno.matricula === loginInput && aluno.senha === passInput
+    );
+
+    if (!alunoEncontrado) {
+        erroElemento.innerText = "Matrícula ou senha incorretos / não cadastrados.";
+        return;
+    }
+
+    // Atribui os dados do usuário autenticado com segurança
+    dadosUsuario = {
+        nome: alunoEncontrado.nome,
+        rm: alunoEncontrado.matricula,
+        tipo: "aluno",
+        curso: alunoEncontrado.curso,
+        turma: alunoEncontrado.turma,
+        turno: alunoEncontrado.turno,
+        email: alunoEncontrado.email
+    };
+
+    erroElemento.innerText = "";
     document.getElementById("login-screen").classList.remove("active");
     document.getElementById("app-screen").classList.add("active");
     document.getElementById("welcome-text").innerText = "Olá, Sou seu Comunic!";
+    document.getElementById("user-info").innerText = dadosUsuario.curso;
     
     renderizarConteudoComSkeleton();
 }
 
 function fecharSessao() {
+    document.getElementById("login-rm").value = "";
+    document.getElementById("login-password").value = "";
+    document.getElementById("login-error").innerText = "";
     document.getElementById("app-screen").classList.remove("active");
     document.getElementById("login-screen").classList.add("active");
 }
@@ -135,7 +195,7 @@ function renderizarCardsFiltros(container) {
 }
 
 function renderizarPerfil(container) {
-    const iniciais = dadosUsuario.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const iniciais = dadosUsuario.nome ? dadosUsuario.nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : "CS";
     const isProf = (dadosUsuario.tipo === "professor");
     const isGestao = (dadosUsuario.tipo === "gestao");
 
@@ -227,39 +287,4 @@ function abrirNotificacoes() {
 function fecharNotificacoes() {
     document.getElementById("sidebar-overlay").style.display = "none";
     document.getElementById("notification-sidebar").classList.remove("open");
-}
-
-// --- Lógica de alternância (Mantendo o visual original) ---
-function mostrarCadastro() {
-    document.getElementById('login-inputs').style.display = 'none';
-    document.getElementById('register-inputs').style.display = 'block';
-    // Limpa erro se houver
-    document.getElementById("login-error").innerText = "";
-}
-
-function mostrarLogin() {
-    document.getElementById('login-inputs').style.display = 'block';
-    document.getElementById('register-inputs').style.display = 'none';
-    document.getElementById("login-error").innerText = "";
-}
-
-function salvarCadastro() {
-    const rm = document.getElementById('reg-rm').value;
-    const senha = document.getElementById('reg-password').value;
-    
-    // Validação: Matrícula números / Senha com letra, número e símbolo
-    const regexSenha = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/;
-
-    if (rm.length < 5) {
-        alert("Digite uma matrícula válida.");
-        return;
-    }
-
-    if (!regexSenha.test(senha)) {
-        alert("A senha deve conter letras, números e símbolos especiais.");
-        return;
-    }
-
-    alert("Cadastro realizado com sucesso!");
-    mostrarLogin();
 }
