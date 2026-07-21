@@ -1,19 +1,3 @@
-// --- BASE DE DADOS DE ALUNOS CADASTRADOS (Simulação local segura) ---
-const bancoAlunosCadastrados = [
-    { matricula: "2026110488", senha: "Senha@123", nome: "Caio Silva", curso: "Análise e Desenv. de Sistemas", turma: "Turma A", turno: "Noite", email: "caio.silva@aluno.senai.br" },
-    { matricula: "01", senha: "Senai@2026", nome: "Aluno Teste", curso: "Análise e Desenv. de Sistemas", turma: "Turma B", turno: "Manhã", email: "aluno.teste@aluno.senai.br" }
-];
-
-// --- BASE DE DADOS CENTRALIZADA DE CONTEÚDOS ---
-const bancoAnuncios = [
-    { id: 1, categoria: "mural", tag: "coord", tipo: "Gestão", titulo: "Rematrícula 2026/2", desc: "Prezados alunos, o prazo de renovação de matrícula encerra no fim deste mês. Evitem contratempos realizando o processo na secretaria virtual." },
-    { id: 2, categoria: "mural", tag: "prof", tipo: "Professor", titulo: "Entrega de Projetos - Redes", desc: "Professor Carlos avisa: A postagem dos relatórios finais de monitoramento de redes locais deve ser feita no ambiente virtual de aprendizagem até sexta." },
-    { id: 5, categoria: "links", tag: "coord", tipo: "Links", titulo: "Ambiente Virtual de Aprendizagem (AVA)", desc: "Acesse o portal de conteúdos e aulas do SENAI: <a href='https://ava.sp.senai.br' target='_blank' style='color:var(--laranja-senai); text-decoration:underline; font-weight:600;'>ava.sp.senai.br</a>" },
-    { id: 6, categoria: "links", tag: "coord", tipo: "Links", titulo: "Secretaria Digital Virtual", desc: "Consulte suas notas oficiais, faltas e emita documentos acadêmicos diretamente pelo portal: <a href='https://www.sp.senai.br' target='_blank' style='color:var(--laranja-senai); text-decoration:underline; font-weight:600;'>secretaria.virtual.senai</a>" },
-    { id: 3, categoria: "vagas", tag: "job", tipo: "Estágio", titulo: "Desenvolvedor Node.js Júnior", desc: "Empresa de tecnologia busca estudante para atuar no desenvolvimento de integrações de microsserviços e automações. Desejável conhecimento em JavaScript." },
-    { id: 4, categoria: "vagas", tag: "job", tipo: "Estágio", titulo: "Suporte em Infraestrutura", desc: "Oportunidade para monitoramento de ativos de rede e configuração de switches. Envie seu currículo diretamente pelo portal interno." }
-];
-
 // --- ESTADO GLOBAL ---
 let abaAtual = "mural";
 let filtroTagAtivo = "todos";
@@ -65,54 +49,50 @@ function mostrarLogin() {
     alternarTelaCadastro(false);
 }
 
-function salvarCadastro() {
+async function salvarCadastro() {
     const rm = document.getElementById('reg-rm').value.trim();
-    const senha = document.getElementById('reg-password').value;
+    const novaSenha = document.getElementById('reg-password').value;
     const erroElemento = document.getElementById("login-error");
+    erroElemento.style.color = "";
     
-    // Validação estrita: Matrícula deve conter APENAS números
-    const apenasNumeros = /^[0-9]+$/;
-    // Validação de senha: letras (maiúsculas/minúsculas), números e caracteres especiais, min 6 caracteres
-    const regexSenha = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/;
+    const apenasAlfanumerico = /^[a-zA-Z0-9]+$/;
 
-    if (!apenasNumeros.test(rm)) {
-        erroElemento.innerText = "A matrícula deve conter apenas números!";
+    if (!apenasAlfanumerico.test(rm)) {
+        erroElemento.innerText = "A matrícula deve conter apenas letras e números!";
         return;
     }
 
-    if (!regexSenha.test(senha)) {
-        erroElemento.innerText = "A senha deve ter letras, números e símbolos especiais (min. 6 caracteres).";
+    if (!novaSenha) {
+        erroElemento.innerText = "Preencha a senha para cadastrar.";
         return;
     }
 
-    // Verifica se já existe
-    const jaExiste = bancoAlunosCadastrados.find(a => a.matricula === rm);
-    if (jaExiste) {
-        erroElemento.innerText = "Esta matrícula já está cadastrada!";
-        return;
+    try {
+        const resposta = await fetch('/api/alterar-senha', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rm, novaSenha })
+        });
+
+        const resultado = await resposta.json();
+
+        if (resultado.success) {
+            erroElemento.style.color = "green";
+            erroElemento.innerText = resultado.message || "Cadastro realizado com sucesso!";
+            setTimeout(() => {
+                erroElemento.style.color = "";
+                erroElemento.innerText = "";
+                mostrarLogin();
+            }, 2000);
+        } else {
+            erroElemento.innerText = resultado.message || "Matrícula não encontrada.";
+        }
+    } catch (err) {
+        erroElemento.innerText = "Erro de conexão com o servidor.";
     }
-
-    // Adiciona na base temporária simulada
-    bancoAlunosCadastrados.push({
-        matricula: rm,
-        senha: senha,
-        nome: "Aluno Cadastrado",
-        curso: "Análise e Desenv. de Sistemas",
-        turma: "Turma A",
-        turno: "Noite",
-        email: `aluno.${rm}@aluno.senai.br`
-    });
-
-    erroElemento.style.color = "green";
-    erroElemento.innerText = "Cadastro realizado com sucesso! Faça login.";
-    setTimeout(() => {
-        erroElemento.style.color = "";
-        erroElemento.innerText = "";
-        mostrarLogin();
-    }, 2000);
 }
 
-function efetuarLogin() {
+async function efetuarLogin() {
     const loginInput = document.getElementById("login-rm").value.trim();
     const passInput = document.getElementById("login-password").value;
     const erroElemento = document.getElementById("login-error");
@@ -123,41 +103,45 @@ function efetuarLogin() {
         return;
     }
 
-    // Regra: Matrícula deve conter APENAS números
-    const apenasNumeros = /^[0-9]+$/;
-    if (!apenasNumeros.test(loginInput)) {
-        erroElemento.innerText = "A matrícula deve conter apenas números!";
+    const apenasAlfanumerico = /^[a-zA-Z0-9]+$/;
+    if (!apenasAlfanumerico.test(loginInput)) {
+        erroElemento.innerText = "A matrícula deve conter apenas letras e números!";
         return;
     }
 
-    // Validação estrita: Verifica se a matrícula e senha constam exatamente no banco cadastrado
-    const alunoEncontrado = bancoAlunosCadastrados.find(
-        (aluno) => aluno.matricula === loginInput && aluno.senha === passInput
-    );
+    try {
+        const resposta = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rm: loginInput, pass: passInput })
+        });
 
-    if (!alunoEncontrado) {
-        erroElemento.innerText = "Matrícula ou senha incorretos / não cadastrados.";
-        return;
+        const resultado = await resposta.json();
+
+        if (resultado.success) {
+            dadosUsuario = {
+                nome: resultado.nome || "Aluno SENAI",
+                rm: loginInput,
+                tipo: resultado.tipo || "aluno",
+                curso: resultado.curso || "Análise e Desenv. de Sistemas",
+                turma: "Turma A",
+                turno: "Noite",
+                email: `aluno.${loginInput}@aluno.senai.br`
+            };
+
+            erroElemento.innerText = "";
+            document.getElementById("login-screen").classList.remove("active");
+            document.getElementById("app-screen").classList.add("active");
+            document.getElementById("welcome-text").innerText = "Olá, Sou seu Comunic!";
+            document.getElementById("user-info").innerText = dadosUsuario.curso;
+            
+            renderizarConteudoComSkeleton();
+        } else {
+            erroElemento.innerText = resultado.message || "Matrícula ou senha incorretos / não cadastrados.";
+        }
+    } catch (err) {
+        erroElemento.innerText = "Erro de conexão com o servidor Node.js.";
     }
-
-    // Atribui os dados do usuário autenticado com segurança
-    dadosUsuario = {
-        nome: alunoEncontrado.nome,
-        rm: alunoEncontrado.matricula,
-        tipo: "aluno",
-        curso: alunoEncontrado.curso,
-        turma: alunoEncontrado.turma,
-        turno: alunoEncontrado.turno,
-        email: alunoEncontrado.email
-    };
-
-    erroElemento.innerText = "";
-    document.getElementById("login-screen").classList.remove("active");
-    document.getElementById("app-screen").classList.add("active");
-    document.getElementById("welcome-text").innerText = "Olá, Sou seu Comunic!";
-    document.getElementById("user-info").innerText = dadosUsuario.curso;
-    
-    renderizarConteudoComSkeleton();
 }
 
 function fecharSessao() {
@@ -182,6 +166,9 @@ function renderizarConteudoComSkeleton() {
 }
 
 function renderizarCardsFiltros(container) {
+    // Array vazio de anúncios/vagas para você preencher ou puxar do banco futuramente
+    const bancoAnuncios = [];
+
     const filtrados = bancoAnuncios.filter(i => 
         i.categoria === abaAtual && 
         (filtroTagAtivo === "todos" || i.tag === filtroTagAtivo)
@@ -191,7 +178,7 @@ function renderizarCardsFiltros(container) {
         <div class="card">
             <div class="card-header"><h3>${c.titulo}</h3><span class="tag ${c.tag}">${c.tipo}</span></div>
             <p class="card-desc">${c.desc}</p>
-        </div>`).join('') : `<p style="text-align:center; padding:20px;">Nenhum registro encontrado.</p>`;
+        </div>`).join('') : `<p style="text-align:center; padding:30px; color:var(--text-secondary);">Nenhum registro encontrado nesta seção.</p>`;
 }
 
 function renderizarPerfil(container) {
@@ -275,11 +262,8 @@ function filtrarPorTag(tag, btn) {
 
 function abrirNotificacoes() {
     const container = document.getElementById("sidebar-content");
-    const minhasNotificacoes = [
-        { titulo: "Rematrícula 2026/2", tag: "Gest", tipo: "Gestão", desc: "O prazo encerra no fim deste mês. Realize na secretaria." },
-        { titulo: "Entrega de Projetos", tag: "prof", tipo: "Professor", desc: "Postagem no AVA até sexta-feira." }
-    ];
-    container.innerHTML = `<div style="padding: 10px;">${minhasNotificacoes.map(n => `<div class="card" style="margin-bottom: 15px; cursor: pointer;"><div class="card-header"><h3 style="font-size: 14px;">${n.titulo}</h3><span class="tag ${n.tag}" style="font-size: 9px; padding: 3px 6px;">${n.tipo}</span></div><p class="card-desc" style="font-size: 12px; margin-top: 5px;">${n.desc}</p></div>`).join('')}</div>`;
+    const minhasNotificacoes = [];
+    container.innerHTML = minhasNotificacoes.length ? `<div style="padding: 10px;">${minhasNotificacoes.map(n => `<div class="card" style="margin-bottom: 15px; cursor: pointer;"><div class="card-header"><h3 style="font-size: 14px;">${n.titulo}</h3><span class="tag ${n.tag}" style="font-size: 9px; padding: 3px 6px;">${n.tipo}</span></div><p class="card-desc" style="font-size: 12px; margin-top: 5px;">${n.desc}</p></div>`).join('')}</div>` : `<p style="text-align:center; padding:20px; color:var(--text-secondary);">Sem notificações recentes.</p>`;
     document.getElementById("sidebar-overlay").style.display = "block";
     document.getElementById("notification-sidebar").classList.add("open");
 }
