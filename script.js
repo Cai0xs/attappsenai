@@ -1,6 +1,7 @@
 // --- ESTADO GLOBAL ---
 let abaAtual = "mural";
 let filtroTagAtivo = "todos";
+let listaGlobalCards = []; // Armazena os dados para a busca por palavra-chave
 let dadosUsuario = {
     nome: "",
     rm: "",
@@ -161,24 +162,90 @@ function renderizarConteudoComSkeleton() {
     if(filtros) filtros.style.display = (abaAtual === "perfil") ? "none" : "flex";
     
     setTimeout(() => {
-        abaAtual === "perfil" ? renderizarPerfil(area) : renderizarCardsFiltros(area);
-    }, 500);
+        if (abaAtual === "perfil") {
+            renderizarPerfil(area);
+        } else {
+            // Insere a barra de pesquisa exatamente no espaço solicitado e prepara o container dos cards
+            area.innerHTML = `
+                <div style="margin-bottom: 15px; position: relative; display: flex; align-items: center;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; color: var(--text-secondary);"></i>
+                    <input type="text" id="input-busca-geral" placeholder="Pesquisar..." onkeyup="filtrarConteudoPorPalavraChave()" style="width: 100%; padding: 12px 15px 12px 45px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-primary); outline: none; font-size: 14px;">
+                </div>
+                <div id="cards-resultado-container"></div>
+            `;
+            carregarDadosDaSecao();
+        }
+    }, 400);
 }
 
-function renderizarCardsFiltros(container) {
-    // Array vazio de anúncios/vagas para você preencher ou puxar do banco futuramente
-    const bancoAnuncios = [];
+// --- CARREGAMENTO DE DADOS DA SEÇÃO ---
+async function carregarDadosDaSecao() {
+    listaGlobalCards = []; 
 
-    const filtrados = bancoAnuncios.filter(i => 
-        i.categoria === abaAtual && 
-        (filtroTagAtivo === "todos" || i.tag === filtroTagAtivo)
-    );
+    if (abaAtual === "links") {
+        try {
+            const resposta = await fetch('/api/links');
+            const dadosDoBanco = await resposta.json();
+
+            listaGlobalCards = dadosDoBanco.map(link => ({
+                id: link.id,
+                titulo: link.name,
+                descricao: link.description,
+                url: link.url,
+                tag: "geral",
+                tipo: "Link",
+                categoria: "links"
+            }));
+        } catch (err) {
+            console.error("Erro ao carregar os links do banco:", err);
+            listaGlobalCards = [];
+        }
+    } else {
+        listaGlobalCards = []; 
+    }
+
+    renderizarCardsFiltrados(listaGlobalCards);
+}
+
+function renderizarCardsFiltrados(itens) {
+    const containerCards = document.getElementById("cards-resultado-container");
+    if (!containerCards) return;
+
+    const filtrados = itens.filter(i => {
+        if (abaAtual === "links") {
+            return i.categoria === "links";
+        }
+        return i.categoria === abaAtual && (filtroTagAtivo === "todos" || i.tag === filtroTagAtivo);
+    });
     
-    container.innerHTML = filtrados.length ? filtrados.map(c => `
-        <div class="card">
-            <div class="card-header"><h3>${c.titulo}</h3><span class="tag ${c.tag}">${c.tipo}</span></div>
-            <p class="card-desc">${c.desc}</p>
+    containerCards.innerHTML = filtrados.length ? filtrados.map(c => `
+        <div class="card" style="margin-bottom: 10px;">
+            <div class="card-header">
+                <h3>${c.titulo}</h3>
+                <span class="tag" style="color: #28a745; font-weight: bold;">Acessar</span>
+            </div>
+            <p class="card-desc" style="margin-bottom: 8px;">${c.desc || c.descricao || ''}</p>
+            ${c.url ? `
+                <div style="margin-top: 8px; font-size: 13px;">
+                    <a href="${c.url}" target="_blank" style="color: var(--laranja-senai, #ff6b00); text-decoration: none; word-break: break-all; display: inline-flex; align-items: center; gap: 5px;">
+                        <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 11px;"></i> ${c.url}
+                    </a>
+                </div>
+            ` : ''}
         </div>`).join('') : `<p style="text-align:center; padding:30px; color:var(--text-secondary);">Nenhum registro encontrado nesta seção.</p>`;
+}
+
+// Função de busca instantânea por palavra-chave digitada no input
+function filtrarConteudoPorPalavraChave() {
+    const termo = document.getElementById("input-busca-geral").value.toLowerCase().trim();
+
+    const filtrados = listaGlobalCards.filter(i => {
+        const titulo = (i.titulo || "").toLowerCase();
+        const desc = (i.desc || i.descricao || "").toLowerCase();
+        return titulo.includes(termo) || desc.includes(termo);
+    });
+
+    renderizarCardsFiltrados(filtrados);
 }
 
 function renderizarPerfil(container) {
@@ -257,7 +324,7 @@ function filtrarPorTag(tag, btn) {
     filtroTagAtivo = tag;
     document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-    renderizarCardsFiltros(document.getElementById("content-area"));
+    renderizarCardsFiltrados(listaGlobalCards);
 }
 
 function abrirNotificacoes() {

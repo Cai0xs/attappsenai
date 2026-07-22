@@ -516,3 +516,36 @@ main {
 }
 
 .hidden { display: none !important; }
+
+/* O container principal do app precisa ter position: relative para o botão se prender nele */
+.app-container {
+    position: relative; 
+}
+
+/* Botão Flutuante de Suporte - Estilo Moderno SENAI */
+.btn-suporte-whatsapp {
+    position: absolute !important;
+    bottom: 25px !important;
+    right: 25px !important;
+    width: 50px;
+    height: 50px;
+    background-color: #ff6b00; /* Laranja principal do SENAI */
+    color: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    box-shadow: 0 4px 14px rgba(255, 107, 0, 0.4);
+    z-index: 999;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.25s ease-in-out;
+}
+
+.btn-suporte-whatsapp:hover {
+    transform: translateY(-3px) scale(1.06);
+    background-color: #e05d00;
+    box-shadow: 0 6px 18px rgba(255, 107, 0, 0.6);
+    border-color: #ffffff;
+}

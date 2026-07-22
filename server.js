@@ -3,8 +3,8 @@ const http = require('node:http');
 const fs = require('node:fs');
 const db = require('./conexao'); // Importa a sua conexão centralizada do PostgreSQL
 
-// Configuração e roteamento do Servidor HTTP Nativo
-const server = http.createServer((req, res) => {
+// Configuração e roteamento do Servidor HTTP Nativo (com async adicionado)
+const server = http.createServer(async (req, res) => {
     const url = req.url;
 
     // Roteamento de Arquivos Estáticos (Entrega o Frontend para o Navegador)
@@ -77,6 +77,22 @@ const server = http.createServer((req, res) => {
                 res.end(JSON.stringify({ success: false, message: "Erro ao processar a requisição." }));
             }
         });
+        return;
+    }
+
+    // ==========================================
+    // API: Rota para Buscar Links Úteis
+    // ==========================================
+    if (url === '/api/links' && req.method === 'GET') {
+        try {
+            const resultado = await db.query('SELECT * FROM links ORDER BY id ASC');
+            res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify(resultado.rows));
+        } catch (err) {
+            console.error("Erro ao buscar links:", err);
+            res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({ error: "Erro ao buscar links no banco" }));
+        }
         return;
     }
 
