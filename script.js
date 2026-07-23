@@ -68,6 +68,12 @@ async function salvarCadastro() {
         return;
     }
 
+    // Validação estrita: A senha deve conter exatamente 8 caracteres
+    if (novaSenha.length !== 8) {
+        erroElemento.innerText = "A senha deve conter exatamente 8 caracteres!";
+        return;
+    }
+
     try {
         const resposta = await fetch('/api/alterar-senha', {
             method: 'POST',
@@ -165,7 +171,6 @@ function renderizarConteudoComSkeleton() {
         if (abaAtual === "perfil") {
             renderizarPerfil(area);
         } else {
-            // Insere a barra de pesquisa exatamente no espaço solicitado e prepara o container dos cards
             area.innerHTML = `
                 <div style="margin-bottom: 15px; position: relative; display: flex; align-items: center;">
                     <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; color: var(--text-secondary);"></i>
@@ -182,7 +187,28 @@ function renderizarConteudoComSkeleton() {
 async function carregarDadosDaSecao() {
     listaGlobalCards = []; 
 
-    if (abaAtual === "links") {
+    if (abaAtual === "mural") {
+        try {
+            const resposta = await fetch('/api/mural');
+            const dadosDoBanco = await resposta.json();
+
+            listaGlobalCards = dadosDoBanco.map(post => ({
+                id: post.id,
+                titulo: post.title,
+                desc: post.summary,
+                categoria: "mural",
+                tag: (post.category || "").toLowerCase().includes("gest") ? "gest" : 
+                     (post.category || "").toLowerCase().includes("prof") ? "prof" : 
+                     (post.category || "").toLowerCase().includes("vaga") ? "job" : "todos",
+                location: post.location,
+                eventDate: post.eventdate,
+                imageUrl: post.imageurl
+            }));
+        } catch (err) {
+            console.error("Erro ao carregar o mural do banco:", err);
+            listaGlobalCards = [];
+        }
+    } else if (abaAtual === "links") {
         try {
             const resposta = await fetch('/api/links');
             const dadosDoBanco = await resposta.json();
@@ -190,7 +216,7 @@ async function carregarDadosDaSecao() {
             listaGlobalCards = dadosDoBanco.map(link => ({
                 id: link.id,
                 titulo: link.name,
-                descricao: link.description,
+                desc: link.description,
                 url: link.url,
                 tag: "geral",
                 tipo: "Link",
@@ -215,16 +241,22 @@ function renderizarCardsFiltrados(itens) {
         if (abaAtual === "links") {
             return i.categoria === "links";
         }
+        if (abaAtual === "mural") {
+            return i.categoria === "mural" && (filtroTagAtivo === "todos" || i.tag === filtroTagAtivo);
+        }
         return i.categoria === abaAtual && (filtroTagAtivo === "todos" || i.tag === filtroTagAtivo);
     });
     
     containerCards.innerHTML = filtrados.length ? filtrados.map(c => `
-        <div class="card" style="margin-bottom: 10px;">
-            <div class="card-header">
-                <h3>${c.titulo}</h3>
-                <span class="tag" style="color: #28a745; font-weight: bold;">Acessar</span>
+        <div class="card" style="margin-bottom: 12px; padding: 15px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="font-size: 16px; color: var(--text-primary);">${c.titulo}</h3>
             </div>
-            <p class="card-desc" style="margin-bottom: 8px;">${c.desc || c.descricao || ''}</p>
+            <p class="card-desc" style="margin-bottom: 10px; color: var(--text-secondary); font-size: 14px;">${c.desc || ''}</p>
+            
+            ${c.location ? `<p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;"><i class="fa-solid fa-location-dot"></i> Local: ${c.location}</p>` : ''}
+            ${c.eventDate ? `<p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;"><i class="fa-solid fa-calendar"></i> Data: ${new Date(c.eventDate).toLocaleDateString('pt-BR')}</p>` : ''}
+
             ${c.url ? `
                 <div style="margin-top: 8px; font-size: 13px;">
                     <a href="${c.url}" target="_blank" style="color: var(--laranja-senai, #ff6b00); text-decoration: none; word-break: break-all; display: inline-flex; align-items: center; gap: 5px;">
@@ -235,13 +267,12 @@ function renderizarCardsFiltrados(itens) {
         </div>`).join('') : `<p style="text-align:center; padding:30px; color:var(--text-secondary);">Nenhum registro encontrado nesta seção.</p>`;
 }
 
-// Função de busca instantânea por palavra-chave digitada no input
 function filtrarConteudoPorPalavraChave() {
     const termo = document.getElementById("input-busca-geral").value.toLowerCase().trim();
 
     const filtrados = listaGlobalCards.filter(i => {
         const titulo = (i.titulo || "").toLowerCase();
-        const desc = (i.desc || i.descricao || "").toLowerCase();
+        const desc = (i.desc || "").toLowerCase();
         return titulo.includes(termo) || desc.includes(termo);
     });
 
@@ -282,7 +313,6 @@ function renderizarPerfil(container) {
     `;
 }
 
-// --- AÇÕES DO PERFIL ---
 function executarAtualizacaoPerfil(botao) {
     botao.style.transform = "rotate(360deg)";
     setTimeout(() => { botao.style.transform = "rotate(0deg)"; }, 500);
@@ -312,7 +342,6 @@ function salvarConfiguracoesPerfil() {
     renderizarPerfil(document.getElementById("content-area"));
 }
 
-// --- NAVEGAÇÃO E FILTROS ---
 function mudarTab(id, e) {
     abaAtual = id;
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
