@@ -12,14 +12,16 @@ async function inicializarBanco() {
                 registration VARCHAR(50) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 name VARCHAR(100) NOT NULL,
-                course VARCHAR(100)
+                course VARCHAR(100),
+                email VARCHAR(150)
             );
             CREATE TABLE IF NOT EXISTS gestores (
                 id SERIAL PRIMARY KEY,
                 registration VARCHAR(50) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 name VARCHAR(100) NOT NULL,
-                course VARCHAR(100)
+                course VARCHAR(100),
+                email VARCHAR(150)
             );
             CREATE TABLE IF NOT EXISTS links (
                 id SERIAL PRIMARY KEY,
@@ -53,20 +55,20 @@ async function inicializarBanco() {
 const server = http.createServer(async (req, res) => {
     const url = req.url;
 
-    // Roteamento de Arquivos Estáticos (Entrega o Frontend para o Navegador)
+    // Roteamento de Arquivos Estáticos (Lendo de dentro da pasta www)
     if (url === '/' || url === '/index.html') {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(fs.readFileSync('./index.html'));
+        res.end(fs.readFileSync('./www/index.html'));
         return;
     }
     if (url === '/style.css') {
         res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
-        res.end(fs.readFileSync('./style.css'));
+        res.end(fs.readFileSync('./www/style.css'));
         return;
     }
     if (url === '/script.js') {
         res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
-        res.end(fs.readFileSync('./script.js'));
+        res.end(fs.readFileSync('./www/script.js'));
         return;
     }
 
@@ -108,7 +110,8 @@ const server = http.createServer(async (req, res) => {
                             success: true, 
                             nome: usuario.name, 
                             curso: usuario.course || "Análise e Desenv. de Sistemas", 
-                            tipo: tipoUsuario
+                            tipo: tipoUsuario,
+                            email: usuario.email 
                         }));
                     } else {
                         res.end(JSON.stringify({ success: false, message: "Senha incorreta!" }));
