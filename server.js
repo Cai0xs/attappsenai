@@ -1,7 +1,7 @@
 // server.js - Executado via: node server.js
 const http = require('node:http');
 const fs = require('node:fs');
-const db = require('./conexao'); // Importa a sua conexão centralizada do PostgreSQL
+const db = require('./conexao_fora'); // Importa a sua conexão centralizada do PostgreSQL
 
 // Função para garantir que as tabelas existam automaticamente no banco
 async function inicializarBanco() {
